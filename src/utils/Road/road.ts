@@ -1,18 +1,18 @@
+import {getFactoryAndCar,initFactoryAndCar}from "@/api/init"
+import {updateTimeAndIsready}from "@/api/update"
 //生成轨迹并运动
-export const Move=async(AMap, map, position)=>{
-  console.log(position.data.data);
+export const Move=async(AMap:any, map:any, position:any,ids:any)=>{
   //获取路径信息并转化
-  position.data.data.forEach(async element => {
-    const result = await getRoad(AMap, map, element.depPosition, element.desPosition);
+  for(let i=0;i<position.length;i++){
+    const result = await getRoad(AMap, map, position[i].depPosition, position[i].desPosition);
     const AtRoad = await pathToAt(result.routes[0].steps);
     //轨迹回放
-    const temp=await ReRoad(AMap, map, AtRoad);
-    console.log("temp2",temp);
-  });
+    const temp=await ReRoad(AMap, map, AtRoad,ids[i]);
+  }
 }
 
 //获取路径规划信息
-export const getRoad = (AMap, map,startLngLat,endLngLat) => {
+export const getRoad = (AMap:any, map:any,startLngLat:number,endLngLat:number) => {
     return new Promise((resolve, reject) => {
       AMap.plugin("AMap.Driving", function () {
         var driving = new AMap.Driving({
@@ -37,7 +37,7 @@ export const getRoad = (AMap, map,startLngLat,endLngLat) => {
   };
 
 //处理路径信息，生成经纬度路径
-export const pathToAt=(steps)=>{
+export const pathToAt=(steps:any)=>{
   return new Promise((resolve,reject)=>{
     const AtRoad=[];
     steps.forEach(step => {
@@ -45,22 +45,24 @@ export const pathToAt=(steps)=>{
         AtRoad.push([st.lng,st.lat]);
       })
     });
+    console.log(AtRoad.length);
+    console.log(AtRoad[AtRoad.length-1],AtRoad[AtRoad.length-2],AtRoad[AtRoad.length-3])
     resolve(AtRoad);
   }
 )
 }
 
 //轨迹回放
-export const ReRoad=(AMap,map,AtRoad)=>{
+export const ReRoad=(AMap:any,map:any,AtRoad:any,ids:any)=>{
   return new Promise((resolve,reject)=>{
+
     const marker = new AMap.Marker({
-    map: map,
-    position: AtRoad[0],
-    icon: "https://webapi.amap.com/images/car.png",
-    offset: new AMap.Pixel(-26, -13),
-    autoRotation: false,
-    angle:-90
-    }); 
+      map: map,
+      position: AtRoad[0],
+      icon: "https://a.amap.com/jsapi_demos/static/demo-center-v2/car.png",
+      offset: new AMap.Pixel(-13, -26),
+      name: "nihao"
+  });
 
     // 绘制轨迹
     var polyline = new AMap.Polyline({
@@ -81,14 +83,58 @@ export const ReRoad=(AMap,map,AtRoad)=>{
         strokeWeight: 6,      //线宽
         // strokeStyle: "solid"  //线样式
     });
-    marker.on('moving', function (e) {
+
+    var endMark=0;
+    var Mark=false;
+
+  marker.on('moving', function (e) {
       passedPolyline.setPath(e.passedPath);
+      endMark++;
+      if(endMark>=AtRoad.length-2&&!Mark){
+        Mark=true;
+        updateTimeAndIsready(ids);
+      }
   });
 
   map.setFitView();
-  marker.moveAlong(AtRoad,2);
+  marker.moveAlong(AtRoad, {
+    // 每一段的时长
+    duration: 1,//可根据实际采集时间间隔设置
+    // JSAPI2.0 是否延道路自动设置角度在 moveAlong 里设置
+    autoRotation: true,
+});
   resolve("nihao");
   }
 
   )
+}
+
+export const getInit= async (AMap:any, map:any)=>{
+  const data={ factoryName: "woodfactory1", low: 15 }
+  var res = await getFactoryAndCar(data);
+  const sleep = (ms: number) => {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  };
+  while (res.data.data.length != 2) {
+    res = await getFactoryAndCar({ factoryName: "woodfactory1", low: 15 });
+    await sleep(1000);
+  }
+
+  console.log(res,data);
+  var positionResult=[res.data.data[0].length];
+  var ids=[];
+  for(let i=0;i<res.data.data[0].length;i++){
+    positionResult[i]={
+      depPosition:[res.data.data[1][i].longitude, res.data.data[1][i].latitude],
+      desPosition:[res.data.data[0][i].longitude, res.data.data[0][i].latitude]
+    }
+    ids[i]={
+      carId:res.data.data[1][i].id,
+      factoryId:res.data.data[0][i].id,
+      longitude:res.data.data[0][i].longitude,
+      latitude:res.data.data[0][i].latitude,
+      clas:res.data.data[0][i].clas
+    }
+  }
+  Move(AMap, map, positionResult, ids);
 }

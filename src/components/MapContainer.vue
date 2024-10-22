@@ -3,9 +3,10 @@ import { onMounted, onUnmounted } from "vue";
 import AMapLoader from "@amap/amap-jsapi-loader";
 import { testApi } from "../api/test";
 import { ref } from "vue";
-import { Move } from "../utils/Road/road";
+import { Move, getInit } from "../utils/Road/road";
 import { getMarker } from "../utils/Marker/getMarker";
 import { getPositionList } from "@/api/position";
+import { initFactoryAndCar, getFactoryAndCar } from "@/api/init";
 
 let map = null;
 
@@ -30,11 +31,16 @@ onMounted(async () => {
 
   // 获取工厂点位信息
   getMarker(AMap, map);
-  const positionResult = await getPositionList();
-  // var startLngLat = [116.379028, 39.865042]; //起始点坐标
-  // var endLngLat = [116.427281, 39.903719]; //终点坐标
-  const temp = Move(AMap, map, positionResult);
-  console.log("temp", temp);
+
+  //请求初始化工厂和车辆信息
+  await initFactoryAndCar();
+  getInit(AMap, map);
+
+  // 定时发送请求
+  intervalId = setInterval(async () => {
+    // 在这里发送你的请求，例如调用一个 API 函数
+    console.log("nihao");
+  }, 5000); // 每隔 10 秒发送一次请求
 });
 </script>
 
