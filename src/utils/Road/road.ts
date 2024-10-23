@@ -1,13 +1,13 @@
 import {getFactoryAndCar,initFactoryAndCar}from "@/api/init"
-import {updateTimeAndIsready}from "@/api/update"
+import {updateGetGoods, updateIsReady, updateTime}from "@/api/update"
 //生成轨迹并运动
-export const Move=async(AMap:any, map:any, position:any,ids:any)=>{
+export const Move=async(AMap:any, map:any, position:any,ids:any,isGoods:boolean)=>{
   //获取路径信息并转化
   for(let i=0;i<position.length;i++){
     const result = await getRoad(AMap, map, position[i].depPosition, position[i].desPosition);
     const AtRoad = await pathToAt(result.routes[0].steps);
     //轨迹回放
-    const temp=await ReRoad(AMap, map, AtRoad,ids[i]);
+    const temp=await ReRoad(AMap, map, AtRoad,ids[i],isGoods);
   }
 }
 
@@ -17,7 +17,6 @@ export const getRoad = (AMap:any, map:any,startLngLat:number,endLngLat:number) =
       AMap.plugin("AMap.Driving", function () {
         var driving = new AMap.Driving({
           policy: 0, //驾车路线规划策略，0是速度优先的策略
-          map: map,
         });
         var opts = {
           // waypoints: [[116.397455, 39.909187]], //途经点参数，最多支持传入16个途经点
@@ -27,6 +26,7 @@ export const getRoad = (AMap:any, map:any,startLngLat:number,endLngLat:number) =
           //查询成功时，result 即为对应的驾车导航信息
           if (status === 'complete') {
             console.log("zheli", result);
+            map.remove(result);
             resolve(result);
           } else {
             reject(new Error('Failed to get driving route'));
@@ -53,24 +53,23 @@ export const pathToAt=(steps:any)=>{
 }
 
 //轨迹回放
-export const ReRoad=(AMap:any,map:any,AtRoad:any,ids:any)=>{
+export const ReRoad=(AMap:any,map:any,AtRoad:any,ids:any,isGoods:boolean)=>{
   return new Promise((resolve,reject)=>{
 
     const marker = new AMap.Marker({
       map: map,
       position: AtRoad[0],
       icon: "https://a.amap.com/jsapi_demos/static/demo-center-v2/car.png",
-      offset: new AMap.Pixel(-13, -26),
-      name: "nihao"
-  });
+      offset: new AMap.Pixel(-13, -26)
+    });
 
     // 绘制轨迹
     var polyline = new AMap.Polyline({
         map: map,
         path: AtRoad,
-        showDir:true,
+        showDir: true,
         strokeColor: "#28F",  //线颜色
-        // strokeOpacity: 1,     //线透明度
+        strokeOpacity: 1,     //线透明度
         strokeWeight: 6,      //线宽
         // strokeStyle: "solid"  //线样式
     });   
@@ -88,12 +87,41 @@ export const ReRoad=(AMap:any,map:any,AtRoad:any,ids:any)=>{
     var Mark=false;
 
   marker.on('moving', function (e) {
-      passedPolyline.setPath(e.passedPath);
-      endMark++;
-      if(endMark>=AtRoad.length-2&&!Mark){
-        Mark=true;
-        updateTimeAndIsready(ids);
+    passedPolyline.setPath(e.passedPath);
+    endMark++;
+    if(endMark>=AtRoad.length-5&&!Mark){
+      const sleep = (ms: number) => {
+        return new Promise(resolve => setTimeout(resolve, ms));
+      };
+      sleep(2000);
+      map.remove(marker);
+      map.remove(polyline);
+      map.remove(passedPolyline);
+      Mark=true;
+      if(!isGoods){
+        updateTime(ids);
+        updateGetGoods(ids).then(res=>{
+          console.log("这是取货后返回的数据",res);
+          var positionResult=[];
+          positionResult[0]={
+            depPosition:[ids.longitude,ids.latitude],
+            desPosition:[res.data.data.longitude,res.data.data.latitude]
+          }
+          var id=[];
+          id[0]={
+            carId:ids.carId,
+            factoryId:res.data.data.id,
+            longitude:res.data.data.longitude,
+            latitude:res.data.data.latitude,
+            clas:res.data.data.clas
+          }
+          console.log("ids和positionresult",ids,positionResult);
+          Move(AMap,map,positionResult,id,true);
+        });
+      }else{
+        updateIsReady(ids);
       }
+    }
   });
 
   map.setFitView();
@@ -103,38 +131,35 @@ export const ReRoad=(AMap:any,map:any,AtRoad:any,ids:any)=>{
     // JSAPI2.0 是否延道路自动设置角度在 moveAlong 里设置
     autoRotation: true,
 });
+
   resolve("nihao");
   }
 
   )
 }
 
-export const getInit= async (AMap:any, map:any)=>{
-  const data={ factoryName: "woodfactory1", low: 15 }
+export const getInit= async (AMap:any, map:any,data:any,isGoods:boolean)=>{
   var res = await getFactoryAndCar(data);
-  const sleep = (ms: number) => {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  };
-  while (res.data.data.length != 2) {
-    res = await getFactoryAndCar({ factoryName: "woodfactory1", low: 15 });
-    await sleep(1000);
-  }
 
   console.log(res,data);
-  var positionResult=[res.data.data[0].length];
-  var ids=[];
-  for(let i=0;i<res.data.data[0].length;i++){
-    positionResult[i]={
-      depPosition:[res.data.data[1][i].longitude, res.data.data[1][i].latitude],
-      desPosition:[res.data.data[0][i].longitude, res.data.data[0][i].latitude]
+
+  if(res.data.data.length==2){
+    var positionResult=[res.data.data[0].length];
+    var ids=[];
+    for(let i=0;i<res.data.data[0].length;i++){
+      positionResult[i]={
+        depPosition:[res.data.data[1][i].longitude, res.data.data[1][i].latitude],
+        desPosition:[res.data.data[0][i].longitude, res.data.data[0][i].latitude]
+      }
+      ids[i]={
+        carId:res.data.data[1][i].id,
+        factoryId:res.data.data[0][i].id,
+        longitude:res.data.data[0][i].longitude,
+        latitude:res.data.data[0][i].latitude,
+        clas:res.data.data[0][i].clas
+      }
     }
-    ids[i]={
-      carId:res.data.data[1][i].id,
-      factoryId:res.data.data[0][i].id,
-      longitude:res.data.data[0][i].longitude,
-      latitude:res.data.data[0][i].latitude,
-      clas:res.data.data[0][i].clas
-    }
+    Move(AMap, map, positionResult, ids,isGoods);
   }
-  Move(AMap, map, positionResult, ids);
+
 }

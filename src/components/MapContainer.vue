@@ -23,10 +23,9 @@ onMounted(async () => {
 
   // 初始化地图
   map = new AMap.Map("container", {
-    // 设置地图容器id
-    viewMode: "3D", // 是否为3D地图模式
-    zoom: 11, // 初始化地图级别
-    center: [104.065861, 30.657401], // 初始化地图中心点位置
+    resizeEnable: true,
+    center: [104.065861, 30.657401],
+    zoom: 11,
   });
 
   // 获取工厂点位信息
@@ -34,13 +33,21 @@ onMounted(async () => {
 
   //请求初始化工厂和车辆信息
   await initFactoryAndCar();
-  getInit(AMap, map);
 
+  var reqBody = [
+    { factoryName: "woodfactory1", low: 15 },
+    { factoryName: "furniturefactory", low: 15 },
+  ];
+
+  var flag = 0;
   // 定时发送请求
   intervalId = setInterval(async () => {
-    // 在这里发送你的请求，例如调用一个 API 函数
-    console.log("nihao");
-  }, 5000); // 每隔 10 秒发送一次请求
+    if (flag < 10 || flag / 2 == 0) {
+      await getInit(AMap, map, reqBody[0], false);
+    } else {
+      await getInit(AMap, map, reqBody[1], false);
+    }
+  }, 5000); // 每隔 5 秒发送一次请求
 });
 </script>
 
@@ -53,6 +60,9 @@ onMounted(async () => {
 #container {
   width: 1695px;
   height: 900px;
+}
+.amap-icon img {
+  position: relative;
 }
 </style>
 

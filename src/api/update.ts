@@ -1,9 +1,26 @@
 import {http}from "@/utils/http"
 
-export const updateTimeAndIsready=(data: any)=>{
+export const updateTime=(data: any)=>{
     return http.request(
         "post",
-        "/update/timeAndIsready",
+        "/update/time",
         {data}
     )
 }
+
+export const updateIsReady=(data: any)=>{
+    return http.request(
+        "post",
+        "/update/isReady",
+        {data}
+    )
+}
+
+export const updateGetGoods=(data: any)=>{
+    return http.request(
+        "post",
+        "/update/getGoods",
+        {data}
+    )
+}
+

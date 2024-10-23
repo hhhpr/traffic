@@ -15,7 +15,8 @@ export const getMarker = (AMap,map) => {
           // 图标取图偏移量
           imageOffset: new AMap.Pixel(0, 0)
       });
-        const marker = new AMap.Marker({
+
+      const marker = new AMap.Marker({
           position: new AMap.LngLat(element.longitude, element.latitude), //经纬度对象，也可以是经纬度构成的一维数组[116.39, 39.9]
           title: element.name,
           icon: startIcon,
