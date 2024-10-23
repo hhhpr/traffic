@@ -2,6 +2,7 @@
 
 # 前端主要逻辑
 ![image](https://github.com/user-attachments/assets/c82215b5-f0bb-45db-8b08-40575175a097)
+---
 --api:接口请求
 ---
 --components/Mapcontainer:地图容器和主页面代码都在这
