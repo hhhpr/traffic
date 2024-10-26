@@ -28,10 +28,10 @@ onMounted(async () => {
     zoom: 11,
   });
 
-  // 获取工厂点位信息
+  // 获取工厂点位信息，并使用不同图标区分不同等级的工厂
   getMarker(AMap, map);
 
-  //请求初始化工厂和车辆信息
+  //请求初始化工厂和车辆信息，每个工厂随机生成一个时间节点，到达此时间后表示该工厂有货物准备运输
   await initFactoryAndCar();
 
   var reqBody = [
@@ -40,7 +40,7 @@ onMounted(async () => {
   ];
 
   var flag = 0;
-  // 定时发送请求
+  // 定时发送请求，向后端请求已经准备好运输货物的工厂和车辆并执行后续仿真操作
   intervalId = setInterval(async () => {
     if (flag < 10 || flag / 2 == 0) {
       await getInit(AMap, map, reqBody[0], false);

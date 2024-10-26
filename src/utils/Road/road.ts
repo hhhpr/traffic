@@ -1,6 +1,7 @@
 import {getFactoryAndCar,initFactoryAndCar}from "@/api/init"
 import {updateGetGoods, updateIsReady, updateTime}from "@/api/update"
-//生成轨迹并运动
+
+//Move用于路径规划、播放动画，动画完成后向后端发起请求，更改工厂车辆的相关信息
 export const Move=async(AMap:any, map:any, position:any,ids:any,isGoods:boolean)=>{
   //获取路径信息并转化
   for(let i=0;i<position.length;i++){
@@ -11,7 +12,7 @@ export const Move=async(AMap:any, map:any, position:any,ids:any,isGoods:boolean)
   }
 }
 
-//获取路径规划信息
+//调用高德api获取路径规划信息
 export const getRoad = (AMap:any, map:any,startLngLat:number,endLngLat:number) => {
     return new Promise((resolve, reject) => {
       AMap.plugin("AMap.Driving", function () {
@@ -36,7 +37,7 @@ export const getRoad = (AMap:any, map:any,startLngLat:number,endLngLat:number) =
     });
   };
 
-//处理路径信息，生成经纬度路径
+//利用getRoad函数返回的路径信息，生成经纬度路径，便于ReRoad播放动画
 export const pathToAt=(steps:any)=>{
   return new Promise((resolve,reject)=>{
     const AtRoad=[];
@@ -52,7 +53,8 @@ export const pathToAt=(steps:any)=>{
 )
 }
 
-//轨迹回放
+//调用高德api进行轨迹回放，动画播放完成后进行判定（isGoods），true表示当前车辆有货，本次动画执行后代表车辆完成了本次运输，发起请求向后端释放车辆状态。
+//false表示本次车辆没有载货，本次动画是代表车辆前往工厂取货，向后端发起请求取货并获取目的地工厂，再次调用Move函数进行轨迹回放，并置isGoods为true
 export const ReRoad=(AMap:any,map:any,AtRoad:any,ids:any,isGoods:boolean)=>{
   return new Promise((resolve,reject)=>{
 
@@ -138,6 +140,7 @@ export const ReRoad=(AMap:any,map:any,AtRoad:any,ids:any,isGoods:boolean)=>{
   )
 }
 
+//向后端请求已经准备好运输货物的工厂和车辆并调用Move函数执行后续仿真操作
 export const getInit= async (AMap:any, map:any,data:any,isGoods:boolean)=>{
   var res = await getFactoryAndCar(data);
 
