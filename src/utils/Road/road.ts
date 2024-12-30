@@ -163,6 +163,7 @@ export const getInit= async (AMap:any, map:any,data:any,isGoods:boolean)=>{
       }
     }
     Move(AMap, map, positionResult, ids,isGoods);
+    console.log("hello");
   }
 
 }

@@ -1,12 +1,12 @@
 import { getPositionList } from "@/api/position";
 
-//»ñÈ¡ºÍäÖÈ¾¹¤³§µãÎ»ĞÅÏ¢
+//è·å–å’Œæ¸²æŸ“å·¥å‚ç‚¹ä½ä¿¡æ¯
 export const getPosition =async (AMap,map) => {
     await getPositionList().then((res) => {
       res.data.data.forEach((element) => {
         console.log(element);
         const marker = new AMap.Marker({
-          position: new AMap.LngLat(element.longitude, element.latitude), //¾­Î³¶È¶ÔÏó£¬Ò²¿ÉÒÔÊÇ¾­Î³¶È¹¹³ÉµÄÒ»Î¬Êı×é[116.39, 39.9]
+          position: new AMap.LngLat(element.longitude, element.latitude), //ç»çº¬åº¦å¯¹è±¡ï¼Œä¹Ÿå¯ä»¥æ˜¯ç»çº¬åº¦æ„æˆçš„ä¸€ç»´æ•°ç»„[116.39, 39.9]
           title: element.name,
         });
         map.add(marker);
