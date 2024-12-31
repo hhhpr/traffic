@@ -65,6 +65,22 @@ export const ReRoad=(AMap:any,map:any,AtRoad:any,ids:any,isGoods:boolean)=>{
       offset: new AMap.Pixel(-13, -26)
     });
 
+    const createInfoWindow = (content: string) => {
+      return new AMap.InfoWindow({
+        content: content,  // 信息窗体的内容
+        offset: new AMap.Pixel(30, 15),
+        anchor: 'top-left',  // 锚点设置
+      });
+    };
+
+     // 创建信息窗体并绑定到marker
+     const infoWindow = createInfoWindow("车辆信息");
+
+     // 鼠标点击marker时弹出自定义信息窗体
+     marker.on('click', () => {
+       infoWindow.open(map, marker.getPosition());
+     });
+
     // 绘制轨迹
     var polyline = new AMap.Polyline({
         map: map,
