@@ -21,3 +21,10 @@ export const getfurMarkerList=()=>{
         {}
     )
 }
+export const getFacMarkerList=()=>{
+    return http.request(
+        "get",
+        "/FacMarkerList",
+        {}
+    )
+}
