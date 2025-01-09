@@ -20,3 +20,11 @@ export const getFactoryAndCar=(data: initData)=>{
         {data}
     )
 }
+
+export const getTotalOrders=()=>{
+    return http.request(
+        "get",
+        "/init/fetchOrder",
+        {}
+    )
+}

@@ -1,16 +1,24 @@
-import {getFactoryAndCar,initFactoryAndCar}from "@/api/init"
-import {updateGetGoods, updateIsReady, updateTime}from "@/api/update"
+import {getFactoryAndCar,initFactoryAndCar,getTotalOrders}from "@/api/init"
+import {updateGetGoods, updateIsReady, updateTime,updateOrder}from "@/api/update"
 
 //Move用于路径规划、播放动画，动画完成后向后端发起请求，更改工厂车辆的相关信息
-export const Move=async(AMap:any, map:any, position:any,ids:any,isGoods:boolean)=>{
+export const Move=async(AMap:any, map:any, position:any,ids:any)=>{
   //获取路径信息并转化
   for(let i=0;i<position.length;i++){
-    const result = await getRoad(AMap, map, position[i].depPosition, position[i].desPosition);
+    const result = await getRoad(AMap, map, ids[i].carPosition, position[i].depPosition);
+    console.log("zanting",result);
     const AtRoad = await pathToAt(result.routes[0].steps);
     //轨迹回放
-    const temp=await ReRoad(AMap, map, AtRoad,ids[i],isGoods);
+    const temp=await ReRoad(AMap, map, AtRoad,position[i],ids[i]);
   }
 }
+
+export const reMove =async(AMap:any, map:any, position:any,ids:any)=>{
+    const  result = await getRoad(AMap, map, position.depPosition, position.desPosition);
+    const AtRoad = await pathToAt(result.routes[0].steps);
+    //轨迹回放
+    const temp=await ReRoad(AMap, map,AtRoad, position,ids);
+  }
 
 //调用高德api获取路径规划信息
 export const getRoad = (AMap:any, map:any,startLngLat:number,endLngLat:number) => {
@@ -46,7 +54,7 @@ export const pathToAt=(steps:any)=>{
         AtRoad.push([st.lng,st.lat]);
       })
     });
-    console.log(AtRoad.length);
+    console.log("new",AtRoad.length);
     console.log(AtRoad[AtRoad.length-1],AtRoad[AtRoad.length-2],AtRoad[AtRoad.length-3])
     resolve(AtRoad);
   }
@@ -55,7 +63,7 @@ export const pathToAt=(steps:any)=>{
 
 //调用高德api进行轨迹回放，动画播放完成后进行判定（isGoods），true表示当前车辆有货，本次动画执行后代表车辆完成了本次运输，发起请求向后端释放车辆状态。
 //false表示本次车辆没有载货，本次动画是代表车辆前往工厂取货，向后端发起请求取货并获取目的地工厂，再次调用Move函数进行轨迹回放，并置isGoods为true
-export const ReRoad=(AMap:any,map:any,AtRoad:any,ids:any,isGoods:boolean)=>{
+export const ReRoad=(AMap:any,map:any,AtRoad:any,position:any,ids:any)=>{
   return new Promise((resolve,reject)=>{
 
     const marker = new AMap.Marker({
@@ -73,8 +81,15 @@ export const ReRoad=(AMap:any,map:any,AtRoad:any,ids:any,isGoods:boolean)=>{
       });
     };
 
-     // 创建信息窗体并绑定到marker
-     const infoWindow = createInfoWindow("车辆信息");
+    const infoContent = 
+    `车辆id：${ids.carid}<br>
+     车辆品牌：${ids.cartype}<br>
+     车辆负重：${ids.load}<br>
+     当前状态：${ids.isgoods === true ? "送货中" : "取货中"}
+     `
+
+    // 创建信息窗体并绑定到marker
+    const infoWindow = createInfoWindow(infoContent);
 
      // 鼠标点击marker时弹出自定义信息窗体
      marker.on('click', () => {
@@ -107,7 +122,8 @@ export const ReRoad=(AMap:any,map:any,AtRoad:any,ids:any,isGoods:boolean)=>{
   marker.on('moving', function (e) {
     passedPolyline.setPath(e.passedPath);
     endMark++;
-    if(endMark>=AtRoad.length-5&&!Mark){
+    if(endMark>=AtRoad.length&&!Mark){
+      console.log("sssssssssss")
       const sleep = (ms: number) => {
         return new Promise(resolve => setTimeout(resolve, ms));
       };
@@ -116,8 +132,13 @@ export const ReRoad=(AMap:any,map:any,AtRoad:any,ids:any,isGoods:boolean)=>{
       map.remove(polyline);
       map.remove(passedPolyline);
       Mark=true;
-      if(!isGoods){
-        updateTime(ids);
+      if(ids.isgoods === false){
+        ids.isgoods = true;
+        updateOrder({
+          orderId: ids.orderId,
+          state: "1"
+        });
+/*         updateTime(ids);
         updateGetGoods(ids).then(res=>{
           console.log("这是取货后返回的数据",res);
           var positionResult=[];
@@ -134,10 +155,17 @@ export const ReRoad=(AMap:any,map:any,AtRoad:any,ids:any,isGoods:boolean)=>{
             clas:res.data.data.clas
           }
           console.log("ids和positionresult",ids,positionResult);
-          Move(AMap,map,positionResult,id,true);
-        });
+          Move(AMap,map,positionResult,id);
+        }); */
+/*         Move(AMap,map,position,ids); */
+           reMove(AMap,map,position,ids);
       }else{
-        updateIsReady(ids);
+/*         updateIsReady(ids); */
+        updateOrder({
+          orderId: ids.orderId,
+          state: "2"
+        });
+        console.log("else")
       }
     }
   });
@@ -157,28 +185,41 @@ export const ReRoad=(AMap:any,map:any,AtRoad:any,ids:any,isGoods:boolean)=>{
 }
 
 //向后端请求已经准备好运输货物的工厂和车辆并调用Move函数执行后续仿真操作
-export const getInit= async (AMap:any, map:any,data:any,isGoods:boolean)=>{
-  var res = await getFactoryAndCar(data);
+export const getInit= async (AMap:any, map:any)=>{
+/*   var res = await getFactoryAndCar(data); */
+  var res2 = await getTotalOrders();
+  console.log("jj",res2);
 
-  console.log(res,data);
+/*   console.log(res,data); */
 
-  if(res.data.data.length==2){
-    var positionResult=[res.data.data[0].length];
+  if(res2.data.length == 4){
+    console.log("yes")
+    var positionResult=[];
     var ids=[];
-    for(let i=0;i<res.data.data[0].length;i++){
+    for(let i=0;i<res2.data.length;i++){
       positionResult[i]={
-        depPosition:[res.data.data[1][i].longitude, res.data.data[1][i].latitude],
-        desPosition:[res.data.data[0][i].longitude, res.data.data[0][i].latitude]
+        depPosition:[res2.data[i].order.startlongitude, res2.data[i].order.startlatitude],
+        desPosition:[res2.data[i].order.endlongitude, res2.data[i].order.endlatitude]
       }
       ids[i]={
-        carId:res.data.data[1][i].id,
-        factoryId:res.data.data[0][i].id,
-        longitude:res.data.data[0][i].longitude,
-        latitude:res.data.data[0][i].latitude,
-        clas:res.data.data[0][i].clas
+        isgoods : false,
+        orderId : res2.data[i].order.id,
+        carid:res2.data[i].order.carid,
+        cartype:res2.data[i].car.type,
+        load:res2.data[i].car.load,
+        factoryId1:res2.data[i].order.startfactoryid,
+        factoryId2:res2.data[i].order.endfactoryid,
+        carPosition:[res2.data[i].car.longitude,res2.data[i].car.latitude],
+        carlongitude:res2.data[i].car.longitude,
+        carlatitude:res2.data[i].car.latitude,
+        sclas:res2.data[i].startFactory.clas,
+        eclas:res2.data[i].endFactory.clas,
       }
     }
-    Move(AMap, map, positionResult, ids,isGoods);
+    console.log("1",positionResult);
+    console.log("2",ids);
+    Move(AMap, map, positionResult, ids);
+
     console.log("hello");
   }
 

@@ -34,18 +34,15 @@ onMounted(async () => {
   //请求初始化工厂和车辆信息，每个工厂随机生成一个时间节点，到达此时间后表示该工厂有货物准备运输
   await initFactoryAndCar();
 
-  var reqBody = [
-    { factoryName: "woodfactory1", low: 15 },
-    { factoryName: "furniturefactory", low: 15 },
-  ];
+
 
   var flag = 0;
   // 定时发送请求，向后端请求已经准备好运输货物的工厂和车辆并执行后续仿真操作
   intervalId = setInterval(async () => {
     if (flag < 10 || flag / 2 == 0) {
-      await getInit(AMap, map, reqBody[0], false);
+      await getInit(AMap, map);
     } else {
-      await getInit(AMap, map, reqBody[1], false);
+      await getInit(AMap, map);
     }
   }, 5000); // 每隔 5 秒发送一次请求
 });

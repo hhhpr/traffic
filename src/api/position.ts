@@ -1,6 +1,6 @@
 import {http}from "@/utils/http"
 
-//»ñÈ¡Â·¾¶ÆğÖ¹µã×ø±ê£¬½øĞĞÂ·¾¶äÖÈ¾
+//è·å–è·¯å¾„èµ·æ­¢ç‚¹åæ ‡ï¼Œè¿›è¡Œè·¯å¾„æ¸²æŸ“
 export const getPositionList=()=>{
     return http.request(
         "get",

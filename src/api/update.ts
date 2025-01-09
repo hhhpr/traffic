@@ -24,3 +24,10 @@ export const updateGetGoods=(data: any)=>{
     )
 }
 
+export const updateOrder=(data: any)=>{
+    return http.request(
+        "post",
+        "updateOrder",
+        {data}
+    )
+}
