@@ -192,7 +192,7 @@ export const getInit= async (AMap:any, map:any)=>{
 
 /*   console.log(res,data); */
 
-  if(res2.data.length == 4){
+  if(res2.data.length !== 0){
     console.log("yes")
     var positionResult=[];
     var ids=[];
