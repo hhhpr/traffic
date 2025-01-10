@@ -7,8 +7,8 @@ import { getPositionList } from "@/api/position";
 import { initFactoryAndCar, getFactoryAndCar } from "@/api/init";
 
 let map = null;
-const vehicleList = ref([]);  // 存储车辆信息的列表
-const maxVehicleCount = 10;  // 限制显示的最大车辆信息数量
+const vehicleList = ref([]); // 存储车辆信息的列表
+const maxVehicleCount = 10; // 限制显示的最大车辆信息数量
 
 onMounted(async () => {
   window._AMapSecurityConfig = {
@@ -36,7 +36,7 @@ onMounted(async () => {
   // 定时请求后端并执行后续仿真操作
   intervalId = setInterval(async () => {
     if (flag < 10 || flag / 2 == 0) {
-      await getInit(AMap, map, updateVehicleList);  // 传递回调来更新车辆信息
+      await getInit(AMap, map, updateVehicleList); // 传递回调来更新车辆信息
     } else {
       await getInit(AMap, map, updateVehicleList);
     }
@@ -49,7 +49,7 @@ function updateVehicleList(info) {
     // 超过最大数量，删除最旧的一个信息
     vehicleList.value.shift();
   }
-  vehicleList.value.push(info);  // 每次更新时，添加新信息到列表中
+  vehicleList.value.push(info); // 每次更新时，添加新信息到列表中
 }
 </script>
 
@@ -60,7 +60,11 @@ function updateVehicleList(info) {
   <div id="container2">
     <!-- 浮窗样式 -->
     <div v-if="vehicleList.length" class="info-layer">
-      <div v-for="(info, index) in vehicleList" :key="index" class="vehicle-info">
+      <div
+        v-for="(info, index) in vehicleList"
+        :key="index"
+        class="vehicle-info"
+      >
         {{ info }}
       </div>
     </div>
@@ -81,7 +85,7 @@ function updateVehicleList(info) {
   position: absolute;
   top: 0;
   left: 0;
-  width:50%;  /* 使浮窗占据八分之一宽度 */
+  width: 50%; /* 使浮窗占据八分之一宽度 */
   height: 25%; /* 使浮窗占据八分之一高度 */
   background-color: rgba(0, 0, 0, 0.7); /* 半透明背景 */
   z-index: 1000; /* 确保浮窗显示在地图之上 */
